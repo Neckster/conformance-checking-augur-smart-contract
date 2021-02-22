@@ -3,6 +3,7 @@ from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.objects.petri.importer import importer as pnml_importer
 from pm4py.algo.conformance.tokenreplay import algorithm as token_replay
 from pm4py.algo.conformance.log_skeleton import algorithm as lsk_conformance
+from pm4py.algo.conformance.alignments import algorithm as alignments
 
 INF = 9999
 
@@ -13,7 +14,7 @@ log = xes_importer.apply(
 traces_len = len(log)
 
 net, initial_marking, final_marking = pnml_importer.apply(
-    os.path.join("petri", "augur.pnml")
+    os.path.join("petri", "augur_final.pnml")
 )
 
 # TOKEN BASE REPLAY
@@ -21,7 +22,10 @@ replayed_traces = token_replay.apply(log, net, initial_marking, final_marking)
 
 trace_fitness_sum = 0
 for replayed_trace in replayed_traces:
-    print(f"{replayed_trace}\n")
+
+    if not replayed_trace['trace_is_fit']:
+        print(f"{replayed_trace}\n")
+
     trace_fitness_sum += replayed_trace['trace_fitness']
 
 avg_trace_fitness = trace_fitness_sum / len(replayed_traces)
@@ -105,4 +109,13 @@ print(
     "\nLOG SKELETON (%d/%d | %d traces incorrect) -> %f" % (
         fit_traces, traces_len, traces_len - fit_traces, fraction_fitness
     )
+)
+
+alignment_traces_fitness = 0
+aligned_traces = alignments.apply_log(log, net, initial_marking, final_marking)
+for aligned_trace in aligned_traces:
+    alignment_traces_fitness += aligned_trace['fitness']
+
+print(
+    "\nALIGNMENTS -> %f" % (alignment_traces_fitness / traces_len)
 )
